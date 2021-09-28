@@ -19,6 +19,8 @@ const (
 	LineFeedByte = 0x0a
 )
 
+// Read messages from the websocket connection until the provided array is full.
+// Any surplus data is preserved for the next Read call
 func (w *WebsocketSTOMP) Read(p []byte) (int, error) {
 	// if we have no more data, read the next message from the websocket
 	if len(w.readerBuffer) == 0 {
@@ -34,6 +36,10 @@ func (w *WebsocketSTOMP) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+// Write to the websocket.
+//
+// The written data is held back until a full STOMP frame has been written,
+// then a WS message is sent.
 func (w *WebsocketSTOMP) Write(p []byte) (int, error) {
 	var err error
 	w.writeBuffer = append(w.writeBuffer, p...)
@@ -52,6 +58,9 @@ func (w *WebsocketSTOMP) Close() error {
 	return w.connection.Close(websocket.StatusNormalClosure, "terminating connection")
 }
 
+// Establish a websocket connection with the provided URL.
+// The context parameter will only be used for the connection handshake,
+// and not for the full lifetime of the connection.
 func Connect(ctx context.Context, url string, options *websocket.DialOptions) (*WebsocketSTOMP, error) {
 	con, _, err := websocket.Dial(ctx, url, options)
 	return &WebsocketSTOMP{
